@@ -1,6 +1,6 @@
 # GDELT Cyber Dashboard
 
-Real-time cybersecurity intelligence dashboard powered by [GDELT](https://www.gdeltproject.org/) global news monitoring and Google BigQuery. Built to run free on Vercel's Hobby plan.
+Real-time cybersecurity intelligence dashboard powered by [GDELT](https://www.gdeltproject.org/) global news monitoring and Google BigQuery. Runs free on Vercel's Hobby plan with no long-lived credentials stored anywhere.
 
 ---
 
@@ -12,66 +12,24 @@ Real-time cybersecurity intelligence dashboard powered by [GDELT](https://www.gd
 
 ---
 
-## Auth options
+## How auth works
 
-| | Service account key | Workload Identity Federation |
-|---|---|---|
-| Long-lived secret stored on Vercel | Yes (encrypted) | **No** |
-| Setup complexity | Low | ~10 min extra |
-| Recommended for | Local dev | Vercel deployment |
-| Risk if leaked | Attacker can query BigQuery on your quota | N/A — no key exists |
-
-The app auto-detects which to use: WIF when `VERCEL=1` (set automatically by Vercel), key-based otherwise. So you can use a key locally and WIF in production with no code changes.
+- **Local dev** — [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials) via `gcloud auth application-default login`. No key file.
+- **Vercel** — [Workload Identity Federation](https://vercel.com/docs/oidc/gcp) via `@vercel/oidc`. Vercel issues a short-lived OIDC token per request; GCP exchanges it for a scoped access token. No long-lived secret stored anywhere.
 
 ---
 
 ## Setup
 
-### 1. Google Cloud Project
+### 1. Google Cloud — APIs and service account
 
-You need a GCP project with BigQuery enabled. GDELT is a public dataset — you pay only for query processing (first 1 TB/month is free).
+1. Create a project at [console.cloud.google.com](https://console.cloud.google.com).
+2. Enable the **BigQuery API** and the **IAM Service Account Credentials API**.
+3. Go to **IAM & Admin → Service Accounts → Create service account**.
+4. Grant it **BigQuery Data Viewer** and **BigQuery Job User** roles.
+5. Note the service account email — you'll need it throughout. Do **not** create a key.
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com) and create a project.
-2. Enable the **BigQuery API**.
-3. Go to **IAM & Admin → Service Accounts** → Create service account.
-4. Grant it the **BigQuery Data Viewer** and **BigQuery Job User** roles.
-5. Note the service account email — you'll need it below. Do **not** create a key.
-
-### 2. Local dev credentials (no key required)
-
-Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install) if you haven't, then run:
-
-```bat
-gcloud auth application-default login
-```
-
-This opens a browser, logs you in with your Google account, and writes a short-lived credential to your local machine. The BigQuery client finds it automatically — no key file, no env vars for auth.
-
-Then copy the env example and set the two non-secret values:
-
-```bat
-copy .env.local.example .env.local
-```
-
-| Variable | Value |
-|---|---|
-| `GCP_PROJECT_ID` | Your GCP project ID (GCP console home page) |
-| `GCP_CLIENT_EMAIL` | The service account email from step 1 |
-
-### 3. Run locally
-
-```bash
-npm install
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
----
-
-### 3b. Keyless Auth Setup (Workload Identity Federation)
-
-Do this in the GCP Console UI — no CLI needed:
+### 2. Google Cloud — Workload Identity Federation
 
 1. Go to **IAM & Admin → Workload Identity Federation → Create Pool**
    - Name: `Vercel`, ID: `vercel-pool`
@@ -79,19 +37,51 @@ Do this in the GCP Console UI — no CLI needed:
 2. Add a provider to the pool:
    - Type: `OpenID Connect (OIDC)`
    - Name: `Vercel`, ID: `vercel-provider`
-   - Issuer URL: `https://oidc.vercel.com/YOUR_TEAM_SLUG` (the slug from your Vercel team URL, e.g. `vercel.com/acme` → slug is `acme`)
+   - Issuer URL: `https://oidc.vercel.com/YOUR_TEAM_SLUG`
    - Audience: `https://vercel.com/YOUR_TEAM_SLUG`
    - Attribute mapping: `google.subject` → `assertion.sub`
 
-3. From the pool details page, copy the **IAM Principal** — it looks like `principal://iam.googleapis.com/projects/NUMBER/locations/global/workloadIdentityPools/vercel-pool/subject/SUBJECT`
+   Your team slug is the path in your Vercel team URL — e.g. `vercel.com/acme` → slug is `acme`.
 
-4. Go to **IAM & Admin → Service Accounts → your service account → Permissions → Grant Access**
-   - New principal: paste the IAM Principal from step 3, replacing `SUBJECT` with `owner:YOUR_TEAM_SLUG:project:YOUR_VERCEL_PROJECT_NAME:environment:production`
-   - Role: `Service Account Token Creator`
+3. Grant the service account permission to be impersonated by your Vercel project. Run this in Command Prompt (all one line):
 
-5. Also grant the service account **BigQuery Data Viewer** and **BigQuery Job User** roles on the project.
+```bat
+gcloud iam service-accounts add-iam-policy-binding YOUR_SA_EMAIL --project=YOUR_PROJECT_ID --role=roles/iam.serviceAccountTokenCreator --member="principal://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/vercel-pool/subject/owner:YOUR_TEAM_SLUG:project:YOUR_VERCEL_PROJECT_NAME:environment:production"
+```
 
-Then add these env vars in your Vercel project dashboard:
+### 3. Local dev
+
+Install the [gcloud CLI](https://cloud.google.com/sdk/docs/install), then run:
+
+```bat
+gcloud auth login
+gcloud auth application-default login
+copy .env.local.example .env.local
+```
+
+Set these two values in `.env.local`:
+
+| Variable | Value |
+|---|---|
+| `GCP_PROJECT_ID` | Your GCP project ID |
+| `GCP_CLIENT_EMAIL` | Your service account email |
+
+Then:
+
+```bat
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### 4. Deploy to Vercel
+
+```bat
+npx vercel
+```
+
+Add these environment variables in the Vercel dashboard under **Settings → Environment Variables**:
 
 | Variable | Value |
 |---|---|
@@ -101,40 +91,23 @@ Then add these env vars in your Vercel project dashboard:
 | `GCP_WIF_POOL_ID` | `vercel-pool` |
 | `GCP_WIF_PROVIDER_ID` | `vercel-provider` |
 
-Then in Vercel, set these env vars (no `GCP_PRIVATE_KEY` needed):
-- `GCP_PROJECT_ID`
-- `GCP_PROJECT_NUMBER`
-- `GCP_CLIENT_EMAIL`
-- `GCP_WIF_POOL_ID` = `vercel-pool`
-- `GCP_WIF_PROVIDER_ID` = `vercel-provider`
-
 ---
 
-## Deploy to Vercel (free)
+## Vercel free plan — how constraints are handled
 
-```bash
-npx vercel
-```
-
-Add the WIF env vars in the Vercel dashboard under **Settings → Environment Variables** (see step 3b). No `GCP_PRIVATE_KEY` is needed on Vercel.
-
----
-
-## Vercel free plan constraints & how this app handles them
-
-| Constraint | Value | Mitigation |
+| Constraint | Limit | Mitigation |
 |---|---|---|
-| Serverless function timeout | 10 seconds | Live feed queries only scan 24h of data (~200–400 MB). Trend queries run server-side at build/ISR time, not on user requests. |
-| BigQuery free tier | 1 TB/month query processing | Date filters on all queries minimize scan size. Trend data is ISR-cached for 1 hour, so heavy queries run at most 24×/day. |
-| Bandwidth | 100 GB/month | Not a constraint for this app. |
+| Serverless function timeout | 10 seconds | Live feed queries scan only the last 24h (~200–400 MB) and return well within 10s |
+| BigQuery free tier | 1 TB/month query processing | All queries use date filters to minimise scan size; trend data is ISR-cached for 1 hour |
+| Bandwidth | 100 GB/month | Not a concern for a dashboard app |
 
 ---
 
 ## Extending the app
 
-- **Add a country heatmap** — parse the `Locations` field from GKG and render with a D3 world map
-- **CVE correlation** — join GDELT mentions with NVD CVE feed to surface news coverage of known vulnerabilities
-- **Alert threshold** — use Vercel Cron (free: 2 jobs) to run a nightly trend check and email if volume spikes
+- **Country heatmap** — parse the `Locations` field from GKG and render with a D3 world map
+- **CVE correlation** — join GDELT mentions with the NVD CVE feed to surface news coverage of known vulnerabilities
+- **Alerts** — use Vercel Cron (free: 2 jobs) to run a nightly trend check and send an email if volume spikes
 - **Longer history** — increase the `INTERVAL 7 DAY` window in `getCyberTrends()`, but watch your BigQuery quota
 
 ---

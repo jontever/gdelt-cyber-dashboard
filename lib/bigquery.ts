@@ -29,7 +29,7 @@ export async function getBigQueryClient(): Promise<BigQuery> {
       token_url: 'https://sts.googleapis.com/v1/token',
       service_account_impersonation_url: `https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${saEmail}:generateAccessToken`,
       subject_token_supplier: {
-        getSubjectToken: getVercelOidcToken,
+        getSubjectToken: () => getVercelOidcToken(),
       },
     });
 

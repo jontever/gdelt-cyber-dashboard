@@ -68,7 +68,7 @@ export async function getRecentCyberEvents(): Promise<CyberEvent[]> {
       SUBSTR(CAST(DATE AS STRING), 9, 6)  AS time,
       COALESCE(SourceCommonName, 'Unknown') AS source,
       DocumentIdentifier                   AS url,
-      CAST(SPLIT(Tone, ',')[OFFSET(0)] AS FLOAT64) AS tone,
+      CAST(SPLIT(V2Tone, ',')[OFFSET(0)] AS FLOAT64) AS tone,
       COALESCE(Locations, '')              AS locations,
       COALESCE(Organizations, '')          AS organizations,
       THEMES                               AS themes_raw
@@ -113,7 +113,7 @@ export async function getCyberTrends(): Promise<DayTrend[]> {
       COUNTIF(THEMES LIKE '%CYBER_ATTACK%')                AS cyber_attacks,
       COUNTIF(THEMES LIKE '%HACKING%' OR THEMES LIKE '%TAX_FNCACT_HACKER%') AS hacking,
       COUNTIF(THEMES LIKE '%INFORMATION_OPERATIONS%')      AS info_ops,
-      ROUND(AVG(CAST(SPLIT(Tone, ',')[OFFSET(0)] AS FLOAT64)), 2) AS avg_tone
+      ROUND(AVG(CAST(SPLIT(V2Tone, ',')[OFFSET(0)] AS FLOAT64)), 2) AS avg_tone
     FROM \`gdelt-bq.gdeltv2.gkg\`
     WHERE
       DATE >= CAST(
@@ -147,7 +147,7 @@ export async function getTopActors(): Promise<TopActor[]> {
     SELECT
       TRIM(actor)                                                     AS name,
       COUNT(*)                                                        AS mentions,
-      ROUND(AVG(CAST(SPLIT(Tone, ',')[OFFSET(0)] AS FLOAT64)), 2)    AS avg_tone
+      ROUND(AVG(CAST(SPLIT(V2Tone, ',')[OFFSET(0)] AS FLOAT64)), 2)    AS avg_tone
     FROM \`gdelt-bq.gdeltv2.gkg\`,
     UNNEST(SPLIT(Organizations, ';')) AS actor
     WHERE

@@ -57,7 +57,7 @@ export default function TrendChart({ data }: { data: DayTrend[] }) {
           <Line
             type="monotone"
             dataKey="info_ops"
-            name="Info Operations"
+            name="Disinfo / Propaganda"
             stroke="#00d4ff"
             strokeWidth={2}
             dot={false}

@@ -25,9 +25,12 @@ export default function TrendChart({ data }: { data: DayTrend[] }) {
 
   return (
     <div className="bg-cyber-panel border border-cyber-border rounded-lg p-4">
-      <h2 className="text-cyber-accent font-semibold mb-4 text-sm uppercase tracking-widest">
+      <h2 className="text-cyber-accent font-semibold text-sm uppercase tracking-widest">
         7-Day Theme Trends
       </h2>
+      <p className="text-cyber-muted text-xs mb-4 mt-1">
+        Daily article counts from global news mentioning each theme. Sourced from GDELT's Global Knowledge Graph, updated every 15 minutes.
+      </p>
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" />

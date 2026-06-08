@@ -61,16 +61,19 @@ export default async function Dashboard() {
             label: 'Cyber Attack Articles',
             value: trends.reduce((s, d) => s + d.cyber_attacks, 0).toLocaleString(),
             color: 'text-red-400',
+            description: 'News articles tagged CYBER_ATTACK in the last 7 days',
           },
           {
             label: 'Hacking Coverage',
             value: trends.reduce((s, d) => s + d.hacking, 0).toLocaleString(),
             color: 'text-orange-400',
+            description: 'Articles mentioning hacking activity in the last 7 days',
           },
           {
-            label: 'Info Operations',
+            label: 'Disinfo / Propaganda',
             value: trends.reduce((s, d) => s + d.info_ops, 0).toLocaleString(),
             color: 'text-cyber-accent',
+            description: 'Articles covering disinformation or propaganda in the last 7 days',
           },
           {
             label: 'Avg Tone (7d)',
@@ -79,6 +82,7 @@ export default async function Dashboard() {
                 ? (trends.reduce((s, d) => s + d.avg_tone, 0) / trends.length).toFixed(2)
                 : 'N/A',
             color: 'text-slate-300',
+            description: 'Average sentiment of cyber coverage — negative means alarming framing',
           },
         ].map((stat) => (
           <div
@@ -87,6 +91,7 @@ export default async function Dashboard() {
           >
             <p className="text-xs text-cyber-muted mb-1">{stat.label}</p>
             <p className={`text-2xl font-bold font-mono ${stat.color}`}>{stat.value}</p>
+            <p className="text-xs text-cyber-muted mt-2 leading-relaxed">{stat.description}</p>
           </div>
         ))}
       </section>

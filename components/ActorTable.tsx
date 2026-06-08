@@ -13,9 +13,12 @@ function toneBar(tone: number) {
 export default function ActorTable({ actors }: { actors: TopActor[] }) {
   return (
     <div className="bg-cyber-panel border border-cyber-border rounded-lg p-4">
-      <h2 className="text-cyber-accent font-semibold mb-4 text-sm uppercase tracking-widest">
+      <h2 className="text-cyber-accent font-semibold text-sm uppercase tracking-widest">
         Top Actors — Last 48h
       </h2>
+      <p className="text-cyber-muted text-xs mb-4 mt-1">
+        Organizations most mentioned in cyber-related news over the past 48 hours. Tone is the average sentiment of coverage — negative means hostile or alarming framing.
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

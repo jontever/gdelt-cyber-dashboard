@@ -41,9 +41,14 @@ export default function EventFeed() {
   return (
     <div className="bg-cyber-panel border border-cyber-border rounded-lg p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-cyber-accent font-semibold text-sm uppercase tracking-widest">
-          Live Feed — Last 24h
-        </h2>
+        <div>
+          <h2 className="text-cyber-accent font-semibold text-sm uppercase tracking-widest">
+            Live Feed — Last 24h
+          </h2>
+          <p className="text-cyber-muted text-xs mt-1">
+            Latest articles flagged by GDELT as cyber-related. Tone score indicates sentiment — negative values reflect alarming or hostile coverage.
+          </p>
+        </div>
         <button
           onClick={load}
           disabled={loading}

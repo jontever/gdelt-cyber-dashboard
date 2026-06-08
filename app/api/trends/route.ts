@@ -19,9 +19,10 @@ export async function GET() {
       cachedAt: new Date().toISOString(),
     });
   } catch (err) {
-    console.error('[trends]', err);
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error('[trends error]', message);
     return NextResponse.json(
-      { error: 'Failed to fetch trend data from BigQuery' },
+      { error: message },
       { status: 500 }
     );
   }

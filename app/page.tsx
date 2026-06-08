@@ -25,8 +25,9 @@ export default async function Dashboard() {
   try {
     [trends, actors] = await Promise.all([getCyberTrends(), getTopActors()]);
   } catch (e) {
-    console.error('[dashboard]', e);
-    dataError = 'Could not load trend data. Check BigQuery credentials.';
+    const message = e instanceof Error ? e.message : JSON.stringify(e);
+    console.error('[dashboard]', message);
+    dataError = message;
   }
 
   return (

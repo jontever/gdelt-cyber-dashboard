@@ -71,26 +71,35 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### 3b. Keyless Auth Setup (Workload Identity Federation)
 
-Skip this if you're happy using a key for Vercel too. Otherwise, ~10 minutes in GCP Console:
+Do this in the GCP Console UI — no CLI needed:
 
-Run these one at a time in Command Prompt, substituting your own values for the ALL_CAPS placeholders:
+1. Go to **IAM & Admin → Workload Identity Federation → Create Pool**
+   - Name: `Vercel`, ID: `vercel-pool`
 
-```bat
-gcloud iam workload-identity-pools create vercel-pool --project=YOUR_PROJECT_ID --location=global --display-name="Vercel Pool"
+2. Add a provider to the pool:
+   - Type: `OpenID Connect (OIDC)`
+   - Name: `Vercel`, ID: `vercel-provider`
+   - Issuer URL: `https://oidc.vercel.com/YOUR_TEAM_SLUG` (the slug from your Vercel team URL, e.g. `vercel.com/acme` → slug is `acme`)
+   - Audience: `https://vercel.com/YOUR_TEAM_SLUG`
+   - Attribute mapping: `google.subject` → `assertion.sub`
 
-gcloud iam workload-identity-pools providers create-oidc vercel-provider --project=YOUR_PROJECT_ID --location=global --workload-identity-pool=vercel-pool --issuer-uri=https://oidc.vercel.com --attribute-mapping="google.subject=assertion.sub"
+3. From the pool details page, copy the **IAM Principal** — it looks like `principal://iam.googleapis.com/projects/NUMBER/locations/global/workloadIdentityPools/vercel-pool/subject/SUBJECT`
 
-gcloud iam service-accounts add-iam-policy-binding YOUR_SA_EMAIL --project=YOUR_PROJECT_ID --role=roles/iam.workloadIdentityUser --member="principalSet://iam.googleapis.com/projects/YOUR_PROJECT_NUMBER/locations/global/workloadIdentityPools/vercel-pool/attribute.google.subject/YOUR_VERCEL_TEAM_ID:YOUR_VERCEL_PROJECT_ID"
-```
+4. Go to **IAM & Admin → Service Accounts → your service account → Permissions → Grant Access**
+   - New principal: paste the IAM Principal from step 3, replacing `SUBJECT` with `owner:YOUR_TEAM_SLUG:project:YOUR_VERCEL_PROJECT_NAME:environment:production`
+   - Role: `Service Account Token Creator`
 
-Where to find each value:
-| Placeholder | Where to find it |
+5. Also grant the service account **BigQuery Data Viewer** and **BigQuery Job User** roles on the project.
+
+Then add these env vars in your Vercel project dashboard:
+
+| Variable | Value |
 |---|---|
-| `YOUR_PROJECT_ID` | GCP console home page |
-| `YOUR_PROJECT_NUMBER` | GCP console home page (different from project ID) |
-| `YOUR_SA_EMAIL` | IAM & Admin → Service Accounts |
-| `YOUR_VERCEL_TEAM_ID` | Vercel dashboard → Settings → General → Team ID |
-| `YOUR_VERCEL_PROJECT_ID` | Vercel dashboard → your project → Settings → General → Project ID |
+| `GCP_PROJECT_ID` | GCP project ID |
+| `GCP_PROJECT_NUMBER` | GCP project number (IAM & Admin → Settings) |
+| `GCP_CLIENT_EMAIL` | Service account email |
+| `GCP_WIF_POOL_ID` | `vercel-pool` |
+| `GCP_WIF_PROVIDER_ID` | `vercel-provider` |
 
 Then in Vercel, set these env vars (no `GCP_PRIVATE_KEY` needed):
 - `GCP_PROJECT_ID`

@@ -88,7 +88,10 @@ export default function EventFeed() {
 
             <p className="text-xs text-cyber-muted mb-2">
               {formatTime(ev.date, ev.time)}
-              {ev.locations && ` · ${ev.locations.split(';')[0]}`}
+              {ev.locations && (() => {
+                const name = ev.locations.split(';')[0]?.split('#')[1];
+                return name ? ` · ${name}` : '';
+              })()}
             </p>
 
             <div className="flex flex-wrap gap-1">

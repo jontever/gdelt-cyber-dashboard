@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
-import { getRecentCyberEvents } from '@/lib/queries';
+import { getRecentCyberEventsFromCSV } from '@/lib/gdelt-csv';
 
-// No caching — this is the live feed endpoint.
-// Vercel Hobby max duration: 10s. The query is scoped to 24h so it reliably fits.
+// No BigQuery — fetches from GDELT's free raw CSV feed.
+// GDELT publishes new files every 15 minutes.
 export const dynamic = 'force-dynamic';
-export const maxDuration = 10;
 
 export async function GET() {
   try {
-    const events = await getRecentCyberEvents();
+    const events = await getRecentCyberEventsFromCSV();
     return NextResponse.json({ events, fetchedAt: new Date().toISOString() });
   } catch (err) {
-    console.error('[recent-events]', err);
-    return NextResponse.json(
-      { error: 'Failed to fetch events from BigQuery' },
-      { status: 500 }
-    );
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error('[recent-events]', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

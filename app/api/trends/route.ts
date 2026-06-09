@@ -4,7 +4,7 @@ import { getCyberTrends, getTopActors } from '@/lib/queries';
 // Cache this response for 1 hour.
 // Heavier BigQuery scans (7 days of GKG) live here — not on the live feed.
 // Vercel Hobby: cached responses don't count against function invocation limits.
-export const revalidate = 3600;
+export const revalidate = 86400; // 24 hours — one BigQuery scan per day maximum
 
 export async function GET() {
   try {

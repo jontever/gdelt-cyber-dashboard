@@ -15,7 +15,7 @@ import ActorTable from '@/components/ActorTable';
 import EventFeed from '@/components/EventFeed';
 
 // ISR: regenerate at most once per hour
-export const revalidate = 3600;
+export const revalidate = 86400; // 24 hours — limits BigQuery to one scan per day
 
 export default async function Dashboard() {
   let trends: DayTrend[] = [];
